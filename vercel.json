@@ -35,36 +35,6 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/chat",
-      "dest": "/api/chat.js"
-    },
-    {
-      "src": "/api/status",
-      "dest": "/api/status.js"
-    },
-    {
-      "src": "/api/capabilities",
-      "dest": "/api/capabilities.js"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/status.js"
-    },
-    {
-      "src": "/api/websocket",
-      "dest": "/api/websocket.js"
-    },
-    {
-      "src": "/api/auth",
-      "dest": "/api/auth.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/web/$1"
-    }
-  ],
   "env": {
     "NODE_ENV": "production",
     "DATABASE_URL": "postgresql://neondb_owner:npg_Qx5gWVXbr6tJ@ep-green-wave-adqosknz-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
