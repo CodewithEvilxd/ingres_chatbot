@@ -25,6 +25,14 @@
     {
       "src": "api/capabilities.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/websocket.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -57,20 +65,6 @@
       "dest": "/web/$1"
     }
   ],
-  "functions": {
-    "api/chat.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 10
-    },
-    "api/status.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 5
-    },
-    "api/capabilities.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 5
-    }
-  },
   "env": {
     "NODE_ENV": "production",
     "DATABASE_URL": "postgresql://neondb_owner:npg_Qx5gWVXbr6tJ@ep-green-wave-adqosknz-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
@@ -91,7 +85,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type"
+          "value": "Content-Type, Authorization"
         }
       ]
     }
