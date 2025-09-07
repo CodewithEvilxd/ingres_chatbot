@@ -9,6 +9,17 @@
 #include <stdio.h>
 #include <time.h>
 
+// Logging level constants
+typedef enum {
+    LOG_INFO,
+    LOG_WARNING,
+    LOG_ERROR,
+    LOG_DEBUG
+} LogLevel;
+
+// External logging function declaration
+extern void log_message(LogLevel level, const char* format, ...);
+
 // Forward declarations for enhanced functions
 extern IntentType classify_intent_advanced(const char* user_input, ConversationContext* context, float* confidence);
 extern BotResponse* generate_enhanced_response(IntentType intent, const char* user_input, 
@@ -25,25 +36,36 @@ extern void free_enhanced_bot_response(BotResponse* response);
 static ConversationContext* global_context = NULL;
 
 bool chatbot_init(void) {
+    log_message(LOG_INFO, "Initializing INGRES ChatBot system...");
+
     // Initialize the database
     if (!db_init()) {
+        log_message(LOG_ERROR, "Failed to initialize database!");
         print_error("Failed to initialize database!");
         return false;
     }
-    
+    log_message(LOG_INFO, "Database initialization successful");
+
     // Initialize global conversation context
     global_context = init_conversation_context();
     if (!global_context) {
+        log_message(LOG_ERROR, "Failed to initialize conversation context!");
         print_error("Failed to initialize conversation context!");
         db_close();
         return false;
     }
-    
+    log_message(LOG_INFO, "Conversation context initialized");
+
+    log_message(LOG_INFO, "INGRES ChatBot initialized successfully!");
+    log_message(LOG_INFO, "Enhanced intent system loaded with 70+ intent types");
+    log_message(LOG_INFO, "Conversation context and fuzzy matching enabled");
+    log_message(LOG_INFO, "Multi-language support ready");
+
     printf("[INIT] INGRES ChatBot initialized successfully!\n");
     printf("[INIT] Enhanced intent system loaded with 70+ intent types\n");
     printf("[INIT] Conversation context and fuzzy matching enabled\n");
     printf("[INIT] Multi-language support ready\n");
-    
+
     return true;
 }
 
@@ -68,7 +90,10 @@ IntentType classify_intent(const char* user_input) {
 
 // Enhanced main processing function
 BotResponse* process_user_query(const char* user_input) {
+    log_message(LOG_DEBUG, "Processing user query: %s", user_input ? user_input : "(null)");
+
     if (!user_input || strlen(user_input) == 0) {
+        log_message(LOG_WARNING, "Empty or null user input received");
         BotResponse* error_response = malloc(sizeof(BotResponse));
         if (error_response) {
             error_response->message = strdup("Please provide a valid query.");
@@ -76,6 +101,9 @@ BotResponse* process_user_query(const char* user_input) {
             error_response->has_data = false;
             error_response->confidence_score = 0.0;
             error_response->suggestion_count = 0;
+            log_message(LOG_DEBUG, "Created error response for empty input");
+        } else {
+            log_message(LOG_ERROR, "Failed to allocate memory for error response");
         }
         return error_response;
     }

@@ -6,6 +6,8 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdbool.h>
+
 
 // Enhanced pattern structure with fuzzy matching and context
 typedef struct {
@@ -23,6 +25,15 @@ typedef struct {
     char* example_queries[5];   // Example queries for this intent
     int example_count;
 } EnhancedIntentPattern;
+
+// Forward declarations for helper functions
+bool is_stop_word(const char* word);
+float calculate_advanced_similarity(const char* str1, const char* str2);
+float calculate_jaccard_similarity(const char* str1, const char* str2);
+float calculate_ngram_score(const char* input, EnhancedIntentPattern* pattern, int word_count, char* words[]);
+float calculate_context_score(ConversationContext* context, EnhancedIntentPattern* pattern, const char* input);
+bool is_related_intent(IntentType intent1, IntentType intent2);
+float calculate_coverage_ratio(const char* input, EnhancedIntentPattern* pattern);
 
 // Comprehensive enhanced patterns
 EnhancedIntentPattern enhanced_patterns[] = {
@@ -264,105 +275,257 @@ float calculate_similarity(const char* str1, const char* str2) {
     return 1.0 - ((float)distance / max_len);
 }
 
-// Enhanced pattern matching with fuzzy logic
+// Enhanced pattern matching with advanced fuzzy logic and N-gram analysis
 IntentType classify_intent_advanced(const char* user_input, ConversationContext* context, float* confidence) {
     if (!user_input) {
         *confidence = 0.0;
         return INTENT_ERROR;
     }
-    
-    char* lower_input = string_to_lower(user_input);
+
+    char* lower_input = string_to_lower((char*)user_input);
     if (!lower_input) {
         *confidence = 0.0;
         return INTENT_ERROR;
     }
-    
+
     float best_score = 0.0;
     IntentType best_intent = INTENT_UNKNOWN;
-    
+
+    // Tokenize input for advanced analysis
+    char* words[100];
+    int word_count = 0;
+    char* input_copy = strdup(lower_input);
+    char* token = strtok(input_copy, " ,.!?;:\"'()");
+
+    while (token && word_count < 100) {
+        // Skip very short words and common stop words
+        if (strlen(token) > 1 && !is_stop_word(token)) {
+            words[word_count++] = token;
+        }
+        token = strtok(NULL, " ,.!?;:\"'()");
+    }
+
     for (int i = 0; i < enhanced_pattern_count; i++) {
         EnhancedIntentPattern* pattern = &enhanced_patterns[i];
         float score = 0.0;
-        int matches = 0;
-        
-        // Check exact keyword matches
+        int exact_matches = 0;
+        int fuzzy_matches = 0;
+        int synonym_matches = 0;
+
+        // 1. Exact keyword matching (highest weight)
         for (int j = 0; j < pattern->keyword_count; j++) {
             if (strstr(lower_input, pattern->keywords[j])) {
-                matches++;
-                score += 1.0;
+                exact_matches++;
+                score += 1.2;  // Higher weight for exact matches
             }
         }
-        
-        // Check synonym matches with slightly lower weight
+
+        // 2. Enhanced synonym matching
         for (int j = 0; j < pattern->synonym_count; j++) {
             if (strstr(lower_input, pattern->synonyms[j])) {
-                score += 0.8;
+                synonym_matches++;
+                score += 0.9;  // Good weight for synonyms
             }
         }
-        
-        // Fuzzy matching for partial matches
-        char* words[50];
-        int word_count = 0;
-        char* input_copy = strdup(lower_input);
-        char* token = strtok(input_copy, " ");
-        
-        while (token && word_count < 50) {
-            words[word_count++] = token;
-            token = strtok(NULL, " ");
-        }
-        
-        // Check fuzzy matches
+
+        // 3. Advanced fuzzy matching with multiple algorithms
         for (int j = 0; j < pattern->keyword_count; j++) {
             for (int k = 0; k < word_count; k++) {
-                float similarity = calculate_similarity(pattern->keywords[j], words[k]);
-                if (similarity > 0.7) {  // 70% similarity threshold
-                    score += similarity * 0.6;  // Reduced weight for fuzzy matches
+                float similarity = calculate_advanced_similarity(pattern->keywords[j], words[k]);
+                if (similarity > 0.75) {  // Stricter threshold
+                    fuzzy_matches++;
+                    score += similarity * 0.7;  // Good weight for fuzzy matches
                 }
             }
         }
-        
-        // Context-dependent scoring
+
+        // 4. N-gram matching for better context understanding
+        score += calculate_ngram_score(lower_input, pattern, word_count, words);
+
+        // 5. Context-dependent scoring with memory
         if (pattern->context_dependent && context) {
-            for (int j = 0; j < pattern->context_count; j++) {
-                if (context->last_location && 
-                    strstr(context->last_location, pattern->context_keywords[j])) {
-                    score += 0.5;  // Context bonus
-                }
-            }
+            score += calculate_context_score(context, pattern, lower_input);
         }
-        
-        // Normalize score based on pattern requirements
+
+        // 6. Pattern-specific scoring adjustments
         if (pattern->require_all) {
-            if (matches < pattern->keyword_count) {
-                score *= 0.5;  // Penalty for not matching all required keywords
+            if (exact_matches < pattern->keyword_count) {
+                score *= 0.6;  // Penalty for missing required keywords
             }
         }
-        
-        // Apply priority weighting
-        score = score * (pattern->priority / 10.0);
-        
-        // Check minimum confidence threshold
-        float normalized_score = score / (pattern->keyword_count + pattern->synonym_count);
-        
+
+        // 7. Length-based scoring (prefer patterns that match more of the input)
+        float coverage_ratio = calculate_coverage_ratio(lower_input, pattern);
+        score *= (0.8 + 0.2 * coverage_ratio);
+
+        // 8. Apply priority weighting with dynamic adjustment
+        float priority_multiplier = pattern->priority / 10.0;
+        if (exact_matches > 0) {
+            priority_multiplier *= 1.2;  // Boost for exact matches
+        }
+        score *= priority_multiplier;
+
+        // 9. Normalize and apply confidence threshold
+        float normalized_score = score / (pattern->keyword_count + pattern->synonym_count + 1.0);
+
+        // Boost score for patterns with high match quality
+        if (exact_matches > 0 && fuzzy_matches > 0) {
+            normalized_score *= 1.1;  // Bonus for mixed matching
+        }
+
         if (normalized_score >= pattern->min_confidence && normalized_score > best_score) {
             best_score = normalized_score;
             best_intent = pattern->intent;
         }
-        
-        free(input_copy);
     }
-    
-    *confidence = best_score;
+
+    free(input_copy);
     free(lower_input);
-    
-    return (best_score > 0.3) ? best_intent : INTENT_UNKNOWN;
+
+    *confidence = best_score;
+
+    // Return UNKNOWN if confidence is too low
+    return (best_score > 0.35) ? best_intent : INTENT_UNKNOWN;
+}
+
+// Helper function to check if word is a stop word
+bool is_stop_word(const char* word) {
+    const char* stop_words[] = {
+        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+        "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does",
+        "did", "will", "would", "could", "should", "may", "might", "must", "can", "shall"
+    };
+
+    for (int i = 0; i < sizeof(stop_words) / sizeof(stop_words[0]); i++) {
+        if (strcmp(word, stop_words[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Advanced similarity calculation with multiple algorithms
+float calculate_advanced_similarity(const char* str1, const char* str2) {
+    if (!str1 || !str2) return 0.0;
+
+    // Use Levenshtein distance as base
+    float levenshtein_sim = calculate_similarity(str1, str2);
+
+    // Add Jaccard similarity for better results
+    float jaccard_sim = calculate_jaccard_similarity(str1, str2);
+
+    // Add length ratio factor
+    float length_ratio = 1.0 - fabs(strlen(str1) - strlen(str2)) / (float)fmax(strlen(str1), strlen(str2));
+
+    // Weighted combination
+    return (levenshtein_sim * 0.6) + (jaccard_sim * 0.3) + (length_ratio * 0.1);
+}
+
+// Jaccard similarity for set-based comparison
+float calculate_jaccard_similarity(const char* str1, const char* str2) {
+    // Simple character-based Jaccard
+    bool chars1[256] = {false};
+    bool chars2[256] = {false};
+
+    for (int i = 0; str1[i]; i++) {
+        chars1[(unsigned char)str1[i]] = true;
+    }
+    for (int i = 0; str2[i]; i++) {
+        chars2[(unsigned char)str2[i]] = true;
+    }
+
+    int intersection = 0;
+    int union_count = 0;
+
+    for (int i = 0; i < 256; i++) {
+        if (chars1[i] || chars2[i]) union_count++;
+        if (chars1[i] && chars2[i]) intersection++;
+    }
+
+    return union_count > 0 ? (float)intersection / union_count : 0.0;
+}
+
+// N-gram scoring for better context understanding
+float calculate_ngram_score(const char* input, EnhancedIntentPattern* pattern, int word_count, char* words[]) {
+    float score = 0.0;
+
+    // Generate bigrams from input
+    for (int i = 0; i < word_count - 1; i++) {
+        char bigram[100];
+        snprintf(bigram, sizeof(bigram), "%s %s", words[i], words[i+1]);
+
+        // Check if bigram matches any pattern keywords
+        for (int j = 0; j < pattern->keyword_count; j++) {
+            if (strstr(bigram, pattern->keywords[j])) {
+                score += 0.8;  // Bigram match bonus
+            }
+        }
+    }
+
+    return score;
+}
+
+// Context scoring with conversation memory
+float calculate_context_score(ConversationContext* context, EnhancedIntentPattern* pattern, const char* input) {
+    float score = 0.0;
+
+    if (!context) return 0.0;
+
+    // Check location context
+    if (context->last_location) {
+        for (int j = 0; j < pattern->context_count; j++) {
+            if (strstr(context->last_location, pattern->context_keywords[j]) ||
+                strstr(input, pattern->context_keywords[j])) {
+                score += 0.6;  // Location context bonus
+            }
+        }
+    }
+
+    // Check intent history
+    if (context->last_intent != INTENT_UNKNOWN) {
+        // Boost related intents
+        if (is_related_intent(context->last_intent, pattern->intent)) {
+            score += 0.4;  // Related intent bonus
+        }
+    }
+
+    return score;
+}
+
+// Check if two intents are related
+bool is_related_intent(IntentType intent1, IntentType intent2) {
+    // Define related intent groups
+    if ((intent1 == INTENT_QUERY_LOCATION && intent2 == INTENT_COMPARE_LOCATIONS) ||
+        (intent1 == INTENT_CRITICAL_AREAS && intent2 == INTENT_POLICY_SUGGESTION) ||
+        (intent1 == INTENT_HISTORICAL_TREND && intent2 == INTENT_COMPARE_LOCATIONS) ||
+        (intent1 == INTENT_WATER_CRISIS && intent2 == INTENT_CONSERVATION_METHODS)) {
+        return true;
+    }
+    return false;
+}
+
+// Calculate how much of the input is covered by pattern matches
+float calculate_coverage_ratio(const char* input, EnhancedIntentPattern* pattern) {
+    int input_len = strlen(input);
+    int covered_len = 0;
+
+    // Count characters covered by matched keywords
+    for (int j = 0; j < pattern->keyword_count; j++) {
+        const char* pos = input;
+        while ((pos = strstr(pos, pattern->keywords[j]))) {
+            covered_len += strlen(pattern->keywords[j]);
+            pos += strlen(pattern->keywords[j]);
+        }
+    }
+
+    return input_len > 0 ? (float)covered_len / input_len : 0.0;
 }
 
 // Extract locations from user input
 int extract_locations(const char* user_input, char** state, char** district, char** block) {
     if (!user_input) return 0;
     
-    char* lower_input = string_to_lower(user_input);
+    char* lower_input = string_to_lower((char*)user_input);
     int locations_found = 0;
     
     *state = NULL;

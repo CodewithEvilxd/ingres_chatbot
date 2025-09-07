@@ -1,0 +1,41 @@
+{
+  "name": "ingres-chatbot",
+  "version": "2.0.0",
+  "description": "INGRES - AI-Powered Groundwater Resource Assistant for Smart India Hackathon 2025",
+  "main": "api/chat.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Build complete'",
+    "start": "vercel dev",
+    "deploy": "vercel --prod",
+    "test": "node test_api.js"
+  },
+  "keywords": [
+    "chatbot",
+    "ai",
+    "groundwater",
+    "india",
+    "hackathon",
+    "smart-india",
+    "water-management",
+    "nlp",
+    "machine-learning"
+  ],
+  "author": "INGRES Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-team/ingres-chatbot.git"
+  },
+  "homepage": "https://ingres-chatbot.vercel.app",
+  "bugs": {
+    "url": "https://github.com/your-team/ingres-chatbot/issues"
+  }
+}

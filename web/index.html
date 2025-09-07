@@ -6,6 +6,7 @@
     <title>INGRES ChatBot - Groundwater Assistant</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -14,15 +15,128 @@
             <div class="header-content">
                 <h1>🌊 INGRES ChatBot</h1>
                 <p>AI-Powered Groundwater Resource Assistant</p>
+                <div class="auth-section">
+                    <div id="authStatus" class="auth-status">
+                        <span id="userInfo" class="user-info hidden">
+                            <span id="userName"></span>
+                            <button onclick="logout()" class="logout-btn">Logout</button>
+                        </span>
+                        <button id="loginBtn" onclick="showLoginModal()" class="auth-btn">Login</button>
+                    </div>
+                </div>
                 <div class="status-indicator">
                     <span id="connectionStatus" class="status-dot offline"></span>
                     <span id="statusText">Connecting...</span>
                 </div>
+                <div class="language-selector">
+                    <select id="languageSelect" onchange="changeLanguage()">
+                        <option value="en">🇺🇸 English</option>
+                        <option value="hi">🇮🇳 हिंदी</option>
+                        <option value="gu">🇮🇳 ગુજરાતી</option>
+                        <option value="mr">🇮🇳 मराठी</option>
+                        <option value="ta">🇮🇳 தமிழ்</option>
+                        <option value="te">🇮🇳 తెలుగు</option>
+                        <option value="bn">🇮🇳 বাংলা</option>
+                        <option value="kn">🇮🇳 ಕನ್ನಡ</option>
+                    </select>
+                </div>
             </div>
         </header>
 
+        <!-- Authentication Modal -->
+        <div id="authModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Login to INGRES</h3>
+                    <button onclick="closeAuthModal()" class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="loginForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" placeholder="Enter username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" placeholder="Enter password" required>
+                        </div>
+                        <button onclick="login()" class="auth-submit-btn">Login</button>
+                        <p class="auth-toggle">
+                            Don't have an account?
+                            <a href="#" onclick="showRegisterForm()">Register here</a>
+                        </p>
+                    </div>
+                    <div id="registerForm" class="auth-form hidden">
+                        <div class="form-group">
+                            <label for="regName">Full Name</label>
+                            <input type="text" id="regName" placeholder="Enter your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regUsername">Username</label>
+                            <input type="text" id="regUsername" placeholder="Choose a username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPassword">Password</label>
+                            <input type="password" id="regPassword" placeholder="Create a password" required>
+                        </div>
+                        <button onclick="register()" class="auth-submit-btn">Register</button>
+                        <p class="auth-toggle">
+                            Already have an account?
+                            <a href="#" onclick="showLoginForm()">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Chat Interface -->
         <main class="chat-container">
+            <!-- Visualization Panel -->
+            <div id="visualizationPanel" class="visualization-panel hidden">
+                <div class="viz-header">
+                    <h3>📊 Advanced Data Analytics</h3>
+                    <button onclick="window.chatBot.closeVisualization()" class="close-btn">✕</button>
+                </div>
+                <div class="viz-content">
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h4>🏆 State-wise Extraction Rates</h4>
+                            <canvas id="extractionChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>📈 Historical Trends (2019-2023)</h4>
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>⚖️ Critical vs Safe Areas</h4>
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>🌧️ Rainfall vs Extraction Correlation</h4>
+                            <canvas id="correlationChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="analytics-summary">
+                        <div class="summary-card">
+                            <h5>🚨 Most Critical State</h5>
+                            <p id="criticalState">Punjab (165% extraction)</p>
+                        </div>
+                        <div class="summary-card">
+                            <h5>✅ Safest State</h5>
+                            <p id="safeState">Kerala (65% extraction)</p>
+                        </div>
+                        <div class="summary-card">
+                            <h5>📊 National Average</h5>
+                            <p id="nationalAvg">125% extraction rate</p>
+                        </div>
+                        <div class="summary-card">
+                            <h5>🔮 Trend Prediction</h5>
+                            <p id="prediction">+5% increase by 2026</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Chat Messages Area -->
             <div id="chatMessages" class="chat-messages">
                 <!-- Welcome message will be inserted here -->
@@ -39,6 +153,9 @@
                 <button class="quick-btn" onclick="sendQuickQuery('Show critical areas')">
                     ⚠️ Critical Areas
                 </button>
+                <button class="quick-btn" onclick="window.chatBot.showVisualization()">
+                    📈 Visualize Data
+                </button>
                 <button class="quick-btn" onclick="sendQuickQuery('Help me understand groundwater categories')">
                     ❓ Help
                 </button>
@@ -47,9 +164,12 @@
             <!-- Input Area -->
             <div class="input-container">
                 <div class="input-wrapper">
-                    <input 
-                        type="text" 
-                        id="userInput" 
+                    <button id="voiceButton" onclick="toggleVoiceInput()" class="voice-btn" title="Voice Input">
+                        <span id="voiceIcon">🎤</span>
+                    </button>
+                    <input
+                        type="text"
+                        id="userInput"
                         placeholder="Ask me about groundwater data in India..."
                         maxlength="500"
                         autocomplete="off"
@@ -78,6 +198,8 @@
         <p>Processing your query...</p>
     </div>
 
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

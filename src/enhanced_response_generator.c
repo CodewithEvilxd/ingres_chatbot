@@ -20,7 +20,7 @@ typedef struct {
 // Comprehensive response templates
 MultilingualResponseTemplate enhanced_templates[] = {
     {
-        .intent = INTENT_GREETING,
+        .intent = 1,  // INTENT_GREETING
         .english_template = "🌊 Namaste! Welcome to INGRES - India's Groundwater Resource Expert System!\n\n"
                            "I'm your AI assistant for comprehensive groundwater information across India. "
                            "I can help you with:\n\n"
@@ -32,7 +32,15 @@ MultilingualResponseTemplate enhanced_templates[] = {
                            "🌱 **Conservation**: Sustainable water management strategies\n\n"
                            "Try asking: 'Show groundwater crisis in Punjab' or 'Compare water trends in Gujarat vs Rajasthan'",
         .hindi_template = "🌊 नमस्ते! INGRES में आपका स्वागत है - भारत की भूजल संसाधन विशेषज्ञ प्रणाली!\n\n"
-                         "मैं भारत भर में व्यापक भूजल जानकारी के लिए आपका AI सहायक हूं।",
+                         "मैं भारत भर में व्यापक भूजल जानकारी के लिए आपका AI सहायक हूं। "
+                         "मैं आपकी मदद कर सकता हूं:\n\n"
+                         "📊 **वास्तविक समय डेटा**: किसी भी स्थान के लिए वर्तमान भूजल स्थिति\n"
+                         "📈 **प्रवृत्ति विश्लेषण**: ऐतिहासिक पैटर्न और भविष्य की भविष्यवाणियां\n"
+                         "⚠️ **संकट अलर्ट**: महत्वपूर्ण और अति-शोषित क्षेत्र\n"
+                         "🔄 **तुलना**: बहु-स्थान और समय विश्लेषण\n"
+                         "🏛️ **नीति अंतर्दृष्टि**: सरकारी योजनाएं और सिफारिशें\n"
+                         "🌱 **संरक्षण**: टिकाऊ जल प्रबंधन रणनीतियां\n\n"
+                         "पूछें: 'पंजाब में भूजल संकट दिखाएं' या 'गुजरात बनाम राजस्थान में जल प्रवृत्तियों की तुलना करें'",
         .needs_location = false,
         .needs_data = false,
         .follow_up_suggestions = {
@@ -46,7 +54,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_QUERY_LOCATION,
+        .intent = 7,  // INTENT_QUERY_LOCATION
         .english_template = "🔍 **GROUNDWATER ANALYSIS FOR %s**\n\n"
                            "📍 **Location**: %s\n"
                            "📅 **Assessment Year**: %d\n"
@@ -58,6 +66,17 @@ MultilingualResponseTemplate enhanced_templates[] = {
                            "**Status Interpretation**:\n%s\n\n"
                            "**Trend**: %s over the past 3 years\n"
                            "**Risk Level**: %s",
+       .hindi_template = "🔍 **%s के लिए भूजल विश्लेषण**\n\n"
+                        "📍 **स्थान**: %s\n"
+                        "📅 **मूल्यांकन वर्ष**: %d\n"
+                        "🏷️ **श्रेणी**: %s\n"
+                        "💧 **वार्षिक पुनर्भरण**: %.2f एमसीएम\n"
+                        "🏭 **वार्षिक निकासी**: %.2f एमसीएम\n"
+                        "📊 **निकासी का स्तर**: %.1f%%\n"
+                        "⚖️ **नेट उपलब्धता**: %.2f एमसीएम\n\n"
+                        "**स्थिति व्याख्या**:\n%s\n\n"
+                        "**प्रवृत्ति**: पिछले 3 वर्षों में %s\n"
+                        "**जोखिम स्तर**: %s",
         .needs_location = true,
         .needs_data = true,
         .follow_up_suggestions = {
@@ -71,7 +90,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_CRITICAL_AREAS,
+        .intent = 37,  // INTENT_CRITICAL_AREAS
         .english_template = "🚨 **CRITICAL GROUNDWATER AREAS - URGENT ATTENTION REQUIRED**\n\n"
                            "**OVER-EXPLOITED REGIONS** (>100%% extraction):\n"
                            "🔴 **Punjab**: 78%% of blocks affected\n"
@@ -93,6 +112,27 @@ MultilingualResponseTemplate enhanced_templates[] = {
                            "• Mandatory rainwater harvesting\n"
                            "• Crop pattern diversification\n"
                            "• Industrial water recycling",
+       .hindi_template = "🚨 **महत्वपूर्ण भूजल क्षेत्र - तत्काल ध्यान आवश्यक**\n\n"
+                        "**अति-शोषित क्षेत्र** (>100%% निकासी):\n"
+                        "🔴 **पंजाब**: 78%% ब्लॉक प्रभावित\n"
+                        "   • अमृतसर: 165%% निकासी दर\n"
+                        "   • लुधियाना: 178%% निकासी दर\n"
+                        "   • बठिंडा: 156%% निकासी दर\n\n"
+                        "🔴 **हरियाणा**: 45%% ब्लॉक प्रभावित\n"
+                        "   • सिरसा: 189%% निकासी दर\n"
+                        "   • हिसार: 145%% निकासी दर\n\n"
+                        "🔴 **तमिलनाडु**: शहरी तनाव क्षेत्र\n"
+                        "   • चेन्नई: 167%% निकासी दर\n\n"
+                        "**महत्वपूर्ण क्षेत्र** (90-100%% निकासी):\n"
+                        "🟠 **महाराष्ट्र**: पुणे (156%%), औरंगाबाद (145%%)\n"
+                        "🟠 **कर्नाटक**: बंगलौर शहरी (167%%)\n"
+                        "🟠 **गुजरात**: अहमदाबाद शहर (156%%)\n"
+                        "🟠 **राजस्थान**: अलवर (134%%)\n\n"
+                        "**तत्काल कार्रवाई आवश्यक**:\n"
+                        "• कड़े भूजल निकासी नियम\n"
+                        "• अनिवार्य वर्षा जल संचयन\n"
+                        "• फसल पैटर्न विविधीकरण\n"
+                        "• औद्योगिक जल पुनर्चक्रण",
         .needs_location = false,
         .needs_data = true,
         .follow_up_suggestions = {
@@ -106,7 +146,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_COMPARE_LOCATIONS,
+        .intent = 44,  // INTENT_COMPARE_LOCATIONS
         .english_template = "🔄 **COMPARATIVE GROUNDWATER ANALYSIS**\n\n"
                            "**%s vs %s** (Latest Assessment)\n\n"
                            "| Parameter | %s | %s |\n"
@@ -136,7 +176,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_HISTORICAL_TREND,
+        .intent = 52,  // INTENT_HISTORICAL_TREND
         .english_template = "📈 **HISTORICAL GROUNDWATER TREND ANALYSIS**\n\n"
                            "📍 **Location**: %s\n"
                            "📅 **Analysis Period**: 2019-2023 (5 years)\n\n"
@@ -171,7 +211,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_POLICY_SUGGESTION,
+        .intent = 72,  // INTENT_POLICY_SUGGESTION
         .english_template = "🏛️ **COMPREHENSIVE POLICY RECOMMENDATIONS FOR %s**\n\n"
                            "**IMMEDIATE MEASURES** (0-6 months):\n"
                            "🚨 **Regulatory Actions**:\n"
@@ -216,7 +256,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_CONSERVATION_METHODS,
+        .intent = 73,  // INTENT_CONSERVATION_METHODS
         .english_template = "🌱 **COMPREHENSIVE WATER CONSERVATION STRATEGIES**\n\n"
                            "**RAINWATER HARVESTING**:\n"
                            "🏠 **Rooftop Systems**:\n"
@@ -268,7 +308,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_RAINFALL_CORRELATION,
+        .intent = 66,  // INTENT_RAINFALL_CORRELATION
         .english_template = "🌧️ **RAINFALL-GROUNDWATER CORRELATION ANALYSIS**\n\n"
                            "**MONSOON IMPACT ON GROUNDWATER RECHARGE**:\n\n"
                            "📊 **Recharge Efficiency by Region**:\n"
@@ -318,7 +358,7 @@ MultilingualResponseTemplate enhanced_templates[] = {
     },
     
     {
-        .intent = INTENT_TECHNICAL_EXPLANATION,
+        .intent = 80,  // INTENT_TECHNICAL_EXPLANATION
         .english_template = "🔬 **TECHNICAL GROUNDWATER CONCEPTS EXPLAINED**\n\n"
                            "**STAGE OF GROUNDWATER EXTRACTION**:\n"
                            "📊 **Formula**: (Annual Extraction / Net Annual Availability) × 100\n\n"

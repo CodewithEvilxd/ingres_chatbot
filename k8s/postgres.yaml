@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "ingres_db"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: password
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      - name: init-scripts
+        configMap:
+          name: postgres-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+data:
+  01-setup.sql: |
+    -- Database setup for INGRES ChatBot
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    -- Create groundwater data table
+    CREATE TABLE IF NOT EXISTS groundwater_data (
+        id SERIAL PRIMARY KEY,
+        state VARCHAR(100) NOT NULL,
+        district VARCHAR(100),
+        block VARCHAR(100),
+        assessment_year INTEGER NOT NULL,
+        annual_recharge DECIMAL(10,2),
+        annual_extraction DECIMAL(10,2),
+        stage_of_extraction DECIMAL(5,2),
+        category VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_state ON groundwater_data(state);
+    CREATE INDEX IF NOT EXISTS idx_district ON groundwater_data(district);
+    CREATE INDEX IF NOT EXISTS idx_category ON groundwater_data(category);
+    CREATE INDEX IF NOT EXISTS idx_assessment_year ON groundwater_data(assessment_year);
+
+  02-populate.sql: |
+    -- Sample groundwater data for demonstration
+    INSERT INTO groundwater_data (state, district, block, assessment_year, annual_recharge, annual_extraction, stage_of_extraction, category) VALUES
+    ('Punjab', 'Amritsar', 'Ajnala', 2023, 1250.50, 1650.75, 132.0, 'Over-Exploited'),
+    ('Punjab', 'Ludhiana', 'Ludhiana-I', 2023, 980.25, 1420.30, 145.0, 'Over-Exploited'),
+    ('Haryana', 'Sirsa', 'Sirsa', 2023, 750.80, 1125.60, 150.0, 'Over-Exploited'),
+    ('Maharashtra', 'Pune', 'Pune City', 2023, 1450.90, 1560.20, 107.5, 'Critical'),
+    ('Gujarat', 'Ahmedabad', 'Ahmedabad City', 2023, 890.40, 1234.80, 138.5, 'Over-Exploited'),
+    ('Karnataka', 'Bangalore', 'Bangalore Urban', 2023, 1200.60, 1320.90, 110.0, 'Critical'),
+    ('Tamil Nadu', 'Chennai', 'Chennai City', 2023, 680.30, 1420.70, 209.0, 'Over-Exploited'),
+    ('Rajasthan', 'Jaipur', 'Jaipur', 2023, 950.20, 1140.30, 120.0, 'Critical'),
+    ('Kerala', 'Thiruvananthapuram', 'Thiruvananthapuram', 2023, 2100.80, 420.50, 20.0, 'Safe'),
+    ('Uttar Pradesh', 'Lucknow', 'Lucknow', 2023, 1350.40, 1485.60, 110.0, 'Critical')
+    ON CONFLICT DO NOTHING;

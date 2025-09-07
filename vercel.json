@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "name": "ingres-chatbot",
+  "builds": [
+    {
+      "src": "web/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "web/style.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "web/script.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/chat.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/status.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/capabilities.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/chat",
+      "dest": "/api/chat.js"
+    },
+    {
+      "src": "/api/status",
+      "dest": "/api/status.js"
+    },
+    {
+      "src": "/api/capabilities",
+      "dest": "/api/capabilities.js"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/status.js"
+    },
+    {
+      "src": "/api/websocket",
+      "dest": "/api/websocket.js"
+    },
+    {
+      "src": "/api/auth",
+      "dest": "/api/auth.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/web/$1"
+    }
+  ],
+  "functions": {
+    "api/chat.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 10
+    },
+    "api/status.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 5
+    },
+    "api/capabilities.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 5
+    }
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "DATABASE_URL": "postgresql://neondb_owner:npg_Qx5gWVXbr6tJ@ep-green-wave-adqosknz-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+    "JWT_SECRET": "a0b46433d1376a75e84b46ed09295f8f81f2059f7df150d8327abf4f29aebf53d5ec8936882c9fade48b3a0ea3ad2a62f7749abc1383b7f222680b0866826c8f"
+  },
+  "regions": ["sin1"],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
+        }
+      ]
+    }
+  ]
+}

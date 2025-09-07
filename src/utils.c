@@ -18,7 +18,7 @@ UtilsError utils_get_last_error(void) {
     return last_error;
 }
 
-string utils_get_error_message(UtilsError error) {
+const char* utils_get_error_message(UtilsError error) {
     switch (error) {
         case UTILS_SUCCESS: return "No error";
         case UTILS_ERROR_NULL_POINTER: return "Null pointer error";

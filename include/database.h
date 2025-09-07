@@ -2,7 +2,11 @@
 #define DATABASE_H
 
 #include <stdbool.h>
+
+// Conditionally include PostgreSQL headers
+#ifdef USE_POSTGRESQL
 #include <libpq-fe.h>
+#endif
 
 // Groundwater assessment data structure based on CGWB format
 typedef struct {
