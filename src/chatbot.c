@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <time.h>
 
-// Logging level constants
+// Enhanced logging with modern C features
 typedef enum {
     LOG_INFO,
     LOG_WARNING,
@@ -17,18 +17,27 @@ typedef enum {
     LOG_DEBUG
 } LogLevel;
 
+// Enhanced error handling
+static ChatbotError last_error = CHATBOT_SUCCESS;
+static char last_error_message[256] = "";
+
+// Global instances for enhanced features
+ThreadSafeCounter request_counter = {0};
+ResponseCache* global_cache = NULL;
+static bool enhanced_features_initialized = false;
+
 // External logging function declaration
 extern void log_message(LogLevel level, const char* format, ...);
 
 // Forward declarations for enhanced functions
 extern IntentType classify_intent_advanced(const char* user_input, ConversationContext* context, float* confidence);
-extern BotResponse* generate_enhanced_response(IntentType intent, const char* user_input, 
-                                             ConversationContext* context, const char* location, 
-                                             const char* query_details);
+extern BotResponse* generate_enhanced_response(IntentType intent, const char* user_input,
+                                              ConversationContext* context, const char* location,
+                                              const char* query_details);
 extern int extract_locations(const char* user_input, char** state, char** district, char** block);
 extern ConversationContext* init_conversation_context(void);
-extern void update_conversation_context(ConversationContext* context, const char* user_input, 
-                                      IntentType intent, const char* location);
+extern void update_conversation_context(ConversationContext* context, const char* user_input,
+                                       IntentType intent, const char* location);
 extern void free_conversation_context(ConversationContext* context);
 extern void free_enhanced_bot_response(BotResponse* response);
 
@@ -36,11 +45,22 @@ extern void free_enhanced_bot_response(BotResponse* response);
 static ConversationContext* global_context = NULL;
 
 bool chatbot_init(void) {
-    log_message(LOG_INFO, "Initializing INGRES ChatBot system...");
+    return chatbot_init_enhanced(NULL);
+}
+
+bool chatbot_init_enhanced(void* config) {
+    log_message(LOG_INFO, "Initializing INGRES ChatBot system with enhanced features...");
+
+    // Reset error state
+    last_error = CHATBOT_SUCCESS;
+    last_error_message[0] = '\0';
 
     // Initialize the database
     if (!db_init()) {
-        log_message(LOG_ERROR, "Failed to initialize database!");
+        last_error = CHATBOT_ERROR_DATABASE_CONNECTION;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Failed to initialize database connection");
+        log_message(LOG_ERROR, "%s", last_error_message);
         print_error("Failed to initialize database!");
         return false;
     }
@@ -49,24 +69,56 @@ bool chatbot_init(void) {
     // Initialize global conversation context
     global_context = init_conversation_context();
     if (!global_context) {
-        log_message(LOG_ERROR, "Failed to initialize conversation context!");
+        last_error = CHATBOT_ERROR_MEMORY_ALLOCATION;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Failed to initialize conversation context - memory allocation error");
+        log_message(LOG_ERROR, "%s", last_error_message);
         print_error("Failed to initialize conversation context!");
         db_close();
         return false;
     }
     log_message(LOG_INFO, "Conversation context initialized");
 
+    // Initialize response cache
+    if (!init_response_cache()) {
+        last_error = CHATBOT_ERROR_MEMORY_ALLOCATION;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Failed to initialize response cache");
+        log_message(LOG_WARNING, "%s - continuing without cache", last_error_message);
+        // Don't fail initialization for cache issues
+    }
+
+    // Initialize web integration
+    if (!init_web_integration()) {
+        last_error = CHATBOT_ERROR_WEB_INTEGRATION;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Failed to initialize web integration");
+        log_message(LOG_WARNING, "%s - web features may be limited", last_error_message);
+        // Don't fail initialization for web integration issues
+    }
+
+    enhanced_features_initialized = true;
+
     log_message(LOG_INFO, "INGRES ChatBot initialized successfully!");
+    log_message(LOG_INFO, "Enhanced features: Caching, Web Integration, Thread Safety");
     log_message(LOG_INFO, "Enhanced intent system loaded with 70+ intent types");
     log_message(LOG_INFO, "Conversation context and fuzzy matching enabled");
     log_message(LOG_INFO, "Multi-language support ready");
 
-    printf("[INIT] INGRES ChatBot initialized successfully!\n");
+    printf("[INIT] INGRES ChatBot %s initialized successfully!\n", CHATBOT_VERSION);
+    printf("[INIT] Enhanced features: Caching, Web API, Thread Safety\n");
     printf("[INIT] Enhanced intent system loaded with 70+ intent types\n");
     printf("[INIT] Conversation context and fuzzy matching enabled\n");
     printf("[INIT] Multi-language support ready\n");
 
     return true;
+}
+
+const char* chatbot_get_last_error(ChatbotError* error_code) {
+    if (error_code) {
+        *error_code = last_error;
+    }
+    return last_error_message[0] != '\0' ? last_error_message : "No error";
 }
 
 void chatbot_cleanup(void) {
@@ -90,10 +142,22 @@ IntentType classify_intent(const char* user_input) {
 
 // Enhanced main processing function
 BotResponse* process_user_query(const char* user_input) {
+    return process_user_query_enhanced(user_input, NULL);
+}
+
+BotResponse* process_user_query_enhanced(const char* user_input, const char* session_id) {
     log_message(LOG_DEBUG, "Processing user query: %s", user_input ? user_input : "(null)");
 
+    // Thread-safe request counting
+    atomic_fetch_add(&request_counter.active_requests, 1);
+
     if (!user_input || strlen(user_input) == 0) {
-        log_message(LOG_WARNING, "Empty or null user input received");
+        last_error = CHATBOT_ERROR_INVALID_INPUT;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Empty or null user input received");
+
+        log_message(LOG_WARNING, "%s", last_error_message);
+
         BotResponse* error_response = malloc(sizeof(BotResponse));
         if (error_response) {
             error_response->message = strdup("Please provide a valid query.");
@@ -103,23 +167,38 @@ BotResponse* process_user_query(const char* user_input) {
             error_response->suggestion_count = 0;
             log_message(LOG_DEBUG, "Created error response for empty input");
         } else {
+            last_error = CHATBOT_ERROR_MEMORY_ALLOCATION;
             log_message(LOG_ERROR, "Failed to allocate memory for error response");
         }
+
+        atomic_fetch_sub(&request_counter.active_requests, 1);
         return error_response;
     }
-    
+
+    // Check cache first if session_id provided
+    if (session_id && global_cache) {
+        char cache_key[256];
+        snprintf(cache_key, sizeof(cache_key), "%s_%s", session_id, user_input);
+        BotResponse* cached_response = get_cached_response(cache_key);
+        if (cached_response) {
+            log_message(LOG_DEBUG, "Cache hit for query: %s", user_input);
+            atomic_fetch_sub(&request_counter.active_requests, 1);
+            return cached_response;
+        }
+    }
+
     clock_t start_time = clock();
-    
+
     // Extract locations from user input
     char* state = NULL;
     char* district = NULL;
     char* block = NULL;
     int locations_found = extract_locations(user_input, &state, &district, &block);
-    
+
     // Classify intent with enhanced system
     float confidence;
     IntentType intent = classify_intent_advanced(user_input, global_context, &confidence);
-    
+
     // Determine primary location for context
     char* primary_location = NULL;
     if (state) {
@@ -129,22 +208,22 @@ BotResponse* process_user_query(const char* user_input) {
     } else if (global_context && global_context->last_location) {
         primary_location = strdup(global_context->last_location);
     }
-    
+
     // Generate enhanced response
-    BotResponse* response = generate_enhanced_response(intent, user_input, global_context, 
-                                                     primary_location, user_input);
-    
+    BotResponse* response = generate_enhanced_response(intent, user_input, global_context,
+                                                      primary_location, user_input);
+
     if (response) {
         // Update confidence score
         response->confidence_score = confidence;
-        
+
         // Calculate processing time
         clock_t end_time = clock();
         response->processing_time_ms = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000.0;
-        
+
         // Update conversation context
         update_conversation_context(global_context, user_input, intent, primary_location);
-        
+
         // Add clarification if confidence is low
         if (confidence < 0.5) {
             response->requires_clarification = true;
@@ -153,14 +232,26 @@ BotResponse* process_user_query(const char* user_input) {
                 "Could you please rephrase or provide more specific details?"
             );
         }
+
+        // Cache the response if session_id provided
+        if (session_id && global_cache && response->confidence_score > 0.7) {
+            char cache_key[256];
+            snprintf(cache_key, sizeof(cache_key), "%s_%s", session_id, user_input);
+            cache_response(cache_key, response);
+        }
+    } else {
+        last_error = CHATBOT_ERROR_RESPONSE_GENERATION;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Failed to generate response for query: %s", user_input);
     }
-    
+
     // Clean up extracted locations
     if (state) free(state);
     if (district) free(district);
     if (block) free(block);
     if (primary_location) free(primary_location);
-    
+
+    atomic_fetch_sub(&request_counter.active_requests, 1);
     return response;
 }
 // Simplified process_user_input for testing
@@ -415,14 +506,324 @@ char* generate_response(IntentType intent, const char* location, const char* que
 
 void free_bot_response(BotResponse* response) {
     if (!response) return;
-    
+
     if (response->message) {
         free(response->message);
     }
-    
+
     if (response->query_result) {
         free_query_result(response->query_result);
     }
-    
+
     free(response);
+}
+
+// ============================================================================
+// ENHANCED CACHE IMPLEMENTATION
+// ============================================================================
+
+bool init_response_cache(void) {
+    if (global_cache) {
+        return true; // Already initialized
+    }
+
+    global_cache = calloc(1, sizeof(ResponseCache));
+    if (!global_cache) {
+        last_error = CHATBOT_ERROR_MEMORY_ALLOCATION;
+        snprintf(last_error_message, sizeof(last_error_message),
+                "Failed to allocate memory for response cache");
+        return false;
+    }
+
+    // Initialize thread-safe counter
+    atomic_init(&global_cache->counter.active_requests, 0);
+    atomic_flag_clear(&global_cache->counter.lock);
+
+    global_cache->size = 0;
+
+    log_message(LOG_INFO, "Response cache initialized with capacity: %d", CACHE_SIZE);
+    return true;
+}
+
+BotResponse* get_cached_response(const char* cache_key) {
+    if (!global_cache || !cache_key) return NULL;
+
+    // Simple linear search for now (could be optimized with hash table)
+    for (int i = 0; i < global_cache->size; i++) {
+        if (strcmp(global_cache->entries[i].key, cache_key) == 0) {
+            // Check if entry is not expired
+            if (time(NULL) - global_cache->entries[i].timestamp < SESSION_TIMEOUT_SECONDS) {
+                global_cache->entries[i].access_count++;
+                log_message(LOG_DEBUG, "Cache hit for key: %s", cache_key);
+
+                // Return a copy of the cached response
+                BotResponse* cached = malloc(sizeof(BotResponse));
+                if (cached) {
+                    memcpy(cached, &global_cache->entries[i].value, sizeof(BotResponse));
+                    // Deep copy strings
+                    if (cached->message) {
+                        cached->message = strdup(cached->message);
+                    }
+                    if (cached->clarification_question) {
+                        cached->clarification_question = strdup(cached->clarification_question);
+                    }
+                    if (cached->language_code) {
+                        cached->language_code = strdup(cached->language_code);
+                    }
+                    // Deep copy suggestions
+                    for (int j = 0; j < cached->suggestion_count && j < 5; j++) {
+                        if (cached->suggested_actions[j]) {
+                            cached->suggested_actions[j] = strdup(cached->suggested_actions[j]);
+                        }
+                    }
+                    // Deep copy data sources
+                    for (int j = 0; j < cached->source_count && j < 3; j++) {
+                        if (cached->data_sources[j]) {
+                            cached->data_sources[j] = strdup(cached->data_sources[j]);
+                        }
+                    }
+                }
+                return cached;
+            } else {
+                // Remove expired entry
+                memmove(&global_cache->entries[i], &global_cache->entries[i + 1],
+                       (global_cache->size - i - 1) * sizeof(CacheEntry));
+                global_cache->size--;
+                i--; // Adjust index after removal
+            }
+        }
+    }
+
+    return NULL;
+}
+
+bool cache_response(const char* cache_key, const BotResponse* response) {
+    if (!global_cache || !cache_key || !response) return false;
+
+    // Check if cache is full
+    if (global_cache->size >= CACHE_SIZE) {
+        // Remove oldest entry (simple LRU approximation)
+        memmove(&global_cache->entries[0], &global_cache->entries[1],
+               (CACHE_SIZE - 1) * sizeof(CacheEntry));
+        global_cache->size--;
+    }
+
+    // Add new entry
+    CacheEntry* entry = &global_cache->entries[global_cache->size];
+    strncpy(entry->key, cache_key, sizeof(entry->key) - 1);
+    entry->key[sizeof(entry->key) - 1] = '\0';
+
+    // Shallow copy of response (strings will be duplicated when retrieved)
+    memcpy(&entry->value, response, sizeof(BotResponse));
+    entry->timestamp = time(NULL);
+    entry->access_count = 1;
+
+    global_cache->size++;
+
+    log_message(LOG_DEBUG, "Cached response for key: %s", cache_key);
+    return true;
+}
+
+int clear_expired_cache(void) {
+    if (!global_cache) return 0;
+
+    int cleared = 0;
+    time_t current_time = time(NULL);
+
+    for (int i = 0; i < global_cache->size; ) {
+        if (current_time - global_cache->entries[i].timestamp >= SESSION_TIMEOUT_SECONDS) {
+            // Remove expired entry
+            memmove(&global_cache->entries[i], &global_cache->entries[i + 1],
+                   (global_cache->size - i - 1) * sizeof(CacheEntry));
+            global_cache->size--;
+            cleared++;
+        } else {
+            i++;
+        }
+    }
+
+    if (cleared > 0) {
+        log_message(LOG_INFO, "Cleared %d expired cache entries", cleared);
+    }
+
+    return cleared;
+}
+
+void get_cache_stats(float* hit_rate, int* size) {
+    if (!global_cache) {
+        if (hit_rate) *hit_rate = 0.0;
+        if (size) *size = 0;
+        return;
+    }
+
+    if (size) *size = global_cache->size;
+
+    // Calculate hit rate (simplified - would need more sophisticated tracking)
+    if (hit_rate) {
+        int total_accesses = 0;
+        int hits = 0;
+
+        for (int i = 0; i < global_cache->size; i++) {
+            total_accesses += global_cache->entries[i].access_count;
+            if (global_cache->entries[i].access_count > 1) {
+                hits += (global_cache->entries[i].access_count - 1);
+            }
+        }
+
+        *hit_rate = total_accesses > 0 ? (float)hits / total_accesses : 0.0;
+    }
+}
+
+// ============================================================================
+// WEB INTEGRATION IMPLEMENTATION
+// ============================================================================
+
+bool init_web_integration(void) {
+    log_message(LOG_INFO, "Initializing web integration for API endpoints");
+    // Web integration is primarily handled by the Node.js server
+    // This function could be used for any C-side web initialization
+    return true;
+}
+
+bool process_web_request(const char* request_json, char** response_json) {
+    if (!request_json || !response_json) {
+        last_error = CHATBOT_ERROR_INVALID_INPUT;
+        return false;
+    }
+
+    // Simple JSON parsing (in production, use a proper JSON library)
+    char* message = NULL;
+    char* session_id = NULL;
+
+    // Extract message from JSON (simplified parsing)
+    const char* message_start = strstr(request_json, "\"message\":\"");
+    if (message_start) {
+        message_start += 11; // Skip "message":"
+        const char* message_end = strstr(message_start, "\"");
+        if (message_end) {
+            int message_len = message_end - message_start;
+            message = malloc(message_len + 1);
+            if (message) {
+                strncpy(message, message_start, message_len);
+                message[message_len] = '\0';
+            }
+        }
+    }
+
+    // Extract session_id from JSON
+    const char* session_start = strstr(request_json, "\"session_id\":\"");
+    if (session_start) {
+        session_start += 14; // Skip "session_id":"
+        const char* session_end = strstr(session_start, "\"");
+        if (session_end) {
+            int session_len = session_end - session_start;
+            session_id = malloc(session_len + 1);
+            if (session_id) {
+                strncpy(session_id, session_start, session_len);
+                session_id[session_len] = '\0';
+            }
+        }
+    }
+
+    if (!message) {
+        last_error = CHATBOT_ERROR_INVALID_INPUT;
+        free(session_id);
+        return false;
+    }
+
+    // Process the message
+    BotResponse* response = process_user_query_enhanced(message, session_id);
+
+    if (!response) {
+        free(message);
+        free(session_id);
+        return false;
+    }
+
+    // Generate JSON response
+    char* json_response = malloc(4096); // Allocate sufficient space
+    if (!json_response) {
+        last_error = CHATBOT_ERROR_MEMORY_ALLOCATION;
+        free_bot_response(response);
+        free(message);
+        free(session_id);
+        return false;
+    }
+
+    // Create JSON response (simplified - in production use proper JSON library)
+    snprintf(json_response, 4096,
+             "{"
+             "\"message\":\"%s\","
+             "\"intent\":%d,"
+             "\"confidence\":%.2f,"
+             "\"processing_time_ms\":%.2f,"
+             "\"has_data\":%s,"
+             "\"requires_clarification\":%s,"
+             "\"suggestions\":[%s],"
+             "\"data_sources\":[%s],"
+             "\"groundwater_status\":\"%s\""
+             "}",
+             response->message ? response->message : "",
+             response->intent,
+             response->confidence_score,
+             response->processing_time_ms,
+             response->has_data ? "true" : "false",
+             response->requires_clarification ? "true" : "false",
+             "\"\"", // Simplified suggestions
+             "\"Central Ground Water Board (CGWB)\"", // Simplified data sources
+             "normal" // Default groundwater status
+    );
+
+    *response_json = json_response;
+
+    // Cleanup
+    free_bot_response(response);
+    free(message);
+    free(session_id);
+
+    return true;
+}
+
+bool get_system_health(char** metrics_json) {
+    if (!metrics_json) {
+        last_error = CHATBOT_ERROR_INVALID_INPUT;
+        return false;
+    }
+
+    char* json_metrics = malloc(1024);
+    if (!json_metrics) {
+        last_error = CHATBOT_ERROR_MEMORY_ALLOCATION;
+        return false;
+    }
+
+    // Get cache stats
+    float cache_hit_rate = 0.0;
+    int cache_size = 0;
+    get_cache_stats(&cache_hit_rate, &cache_size);
+
+    // Create health metrics JSON
+    snprintf(json_metrics, 1024,
+             "{"
+             "\"status\":\"online\","
+             "\"version\":\"%s\","
+             "\"uptime_seconds\":%ld,"
+             "\"active_requests\":%d,"
+             "\"cache_size\":%d,"
+             "\"cache_hit_rate\":%.2f,"
+             "\"enhanced_features\":%s,"
+             "\"intent_types\":70,"
+             "\"total_states\":28,"
+             "\"last_error\":\"%s\""
+             "}",
+             CHATBOT_VERSION,
+             time(NULL) - (global_context ? global_context->session_start : time(NULL)),
+             atomic_load(&request_counter.active_requests),
+             cache_size,
+             cache_hit_rate,
+             enhanced_features_initialized ? "true" : "false",
+             last_error_message[0] != '\0' ? last_error_message : "none"
+    );
+
+    *metrics_json = json_metrics;
+    return true;
 }

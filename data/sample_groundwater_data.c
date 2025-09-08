@@ -76,7 +76,79 @@ GroundwaterData sample_data[] = {
     {"Punjab", "Amritsar", "Ajnala", "Over-Exploited", 148.7, 85.4, 169.8, 2021},
     {"Punjab", "Ludhiana", "Ludhiana-I", "Over-Exploited", 189.6, 105.2, 217.3, 2021},
     {"Haryana", "Karnal", "Karnal", "Safe", 74.8, 84.7, 63.2, 2021},
-    {"Rajasthan", "Jaipur", "Jaipur-I", "Safe", 63.2, 74.1, 52.7, 2021}
+    {"Rajasthan", "Jaipur", "Jaipur-I", "Safe", 63.2, 74.1, 52.7, 2021},
+
+    // Arunachal Pradesh
+    {"Arunachal Pradesh", "Papum Pare", "Itanagar", "Safe", 45.6, 34.2, 56.8, 2023},
+    {"Arunachal Pradesh", "West Kameng", "Bomdila", "Safe", 42.3, 31.8, 53.7, 2023},
+
+    // Assam
+    {"Assam", "Kamrup", "Guwahati", "Semi-Critical", 78.9, 89.2, 67.4, 2023},
+    {"Assam", "Jorhat", "Jorhat", "Safe", 67.8, 56.4, 78.9, 2023},
+
+    // Bihar
+    {"Bihar", "Patna", "Patna", "Critical", 134.5, 145.6, 123.4, 2023},
+    {"Bihar", "Gaya", "Gaya", "Semi-Critical", 89.7, 98.4, 78.9, 2023},
+
+    // Chhattisgarh
+    {"Chhattisgarh", "Raipur", "Raipur", "Safe", 67.8, 56.7, 78.9, 2023},
+    {"Chhattisgarh", "Bilaspur", "Bilaspur", "Semi-Critical", 89.4, 78.9, 95.7, 2023},
+
+    // Goa
+    {"Goa", "North Goa", "Panaji", "Safe", 45.6, 34.2, 56.8, 2023},
+    {"Goa", "South Goa", "Margao", "Safe", 42.3, 31.8, 53.7, 2023},
+
+    // Himachal Pradesh
+    {"Himachal Pradesh", "Shimla", "Shimla", "Safe", 56.7, 45.6, 67.8, 2023},
+    {"Himachal Pradesh", "Kangra", "Dharamshala", "Semi-Critical", 78.9, 89.4, 67.2, 2023},
+
+    // Jharkhand
+    {"Jharkhand", "Ranchi", "Ranchi", "Critical", 145.6, 156.7, 134.5, 2023},
+    {"Jharkhand", "Jamshedpur", "Jamshedpur", "Semi-Critical", 98.7, 89.4, 105.6, 2023},
+
+    // Kerala
+    {"Kerala", "Thiruvananthapuram", "Thiruvananthapuram", "Safe", 67.8, 56.4, 78.9, 2023},
+    {"Kerala", "Kochi", "Kochi", "Semi-Critical", 89.7, 78.9, 95.4, 2023},
+
+    // Madhya Pradesh
+    {"Madhya Pradesh", "Bhopal", "Bhopal", "Critical", 156.7, 167.8, 145.6, 2023},
+    {"Madhya Pradesh", "Indore", "Indore", "Semi-Critical", 98.4, 89.7, 105.6, 2023},
+
+    // Manipur
+    {"Manipur", "Imphal West", "Imphal", "Safe", 45.6, 34.2, 56.8, 2023},
+    {"Manipur", "Imphal East", "Imphal", "Safe", 42.3, 31.8, 53.7, 2023},
+
+    // Meghalaya
+    {"Meghalaya", "East Khasi Hills", "Shillong", "Safe", 56.7, 45.6, 67.8, 2023},
+    {"Meghalaya", "West Garo Hills", "Tura", "Semi-Critical", 78.9, 89.4, 67.2, 2023},
+
+    // Mizoram
+    {"Mizoram", "Aizawl", "Aizawl", "Safe", 45.6, 34.2, 56.8, 2023},
+    {"Mizoram", "Lunglei", "Lunglei", "Safe", 42.3, 31.8, 53.7, 2023},
+
+    // Nagaland
+    {"Nagaland", "Kohima", "Kohima", "Safe", 56.7, 45.6, 67.8, 2023},
+    {"Nagaland", "Dimapur", "Dimapur", "Semi-Critical", 78.9, 89.4, 67.2, 2023},
+
+    // Odisha
+    {"Odisha", "Khordha", "Bhubaneswar", "Safe", 67.8, 56.4, 78.9, 2023},
+    {"Odisha", "Cuttack", "Cuttack", "Semi-Critical", 89.7, 78.9, 95.4, 2023},
+
+    // Sikkim
+    {"Sikkim", "East Sikkim", "Gangtok", "Safe", 45.6, 34.2, 56.8, 2023},
+    {"Sikkim", "West Sikkim", "Geyzing", "Safe", 42.3, 31.8, 53.7, 2023},
+
+    // Telangana
+    {"Telangana", "Hyderabad", "Hyderabad", "Critical", 156.7, 167.8, 145.6, 2023},
+    {"Telangana", "Warangal", "Warangal", "Semi-Critical", 98.4, 89.7, 105.6, 2023},
+
+    // Tripura
+    {"Tripura", "West Tripura", "Agartala", "Safe", 56.7, 45.6, 67.8, 2023},
+    {"Tripura", "South Tripura", "Udaipur", "Semi-Critical", 78.9, 89.4, 67.2, 2023},
+
+    // Uttarakhand
+    {"Uttarakhand", "Dehradun", "Dehradun", "Safe", 67.8, 56.4, 78.9, 2023},
+    {"Uttarakhand", "Haridwar", "Haridwar", "Semi-Critical", 89.7, 78.9, 95.4, 2023}
 };
 
 int sample_data_count = sizeof(sample_data) / sizeof(GroundwaterData);

@@ -26,7 +26,11 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.13",
+    "@tailwindcss/postcss": "^4.1.13",
+    "tailwindcss": "^4.1.13"
+  },
   "devDependencies": {
     "vercel": "^32.0.0"
   },

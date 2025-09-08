@@ -2,12 +2,62 @@
 #define CHATBOT_H
 
 #include <stdbool.h>
+#include <stdatomic.h>
 #include "utils.h"
 #include "database.h"
 
-// Configuration constants
-#define MAX_INPUT_LENGTH 512
-#define MAX_RESPONSE_LENGTH 2048
+// Thread safety for concurrent requests
+typedef struct {
+    atomic_int active_requests;
+    atomic_flag lock;
+} ThreadSafeCounter;
+
+// Configuration constants - increased for better performance
+#define MAX_INPUT_LENGTH 2048
+#define MAX_RESPONSE_LENGTH 4096
+#define MAX_CONCURRENT_REQUESTS 100
+#define CACHE_SIZE 1000
+#define SESSION_TIMEOUT_SECONDS 3600
+
+// Modern C features and thread safety
+#define CHATBOT_VERSION "2.1.0-enhanced"
+#define CHATBOT_API_VERSION "v2"
+
+// Enhanced error codes for better error handling
+typedef enum {
+    CHATBOT_SUCCESS = 0,
+    CHATBOT_ERROR_MEMORY_ALLOCATION,
+    CHATBOT_ERROR_INVALID_INPUT,
+    CHATBOT_ERROR_DATABASE_CONNECTION,
+    CHATBOT_ERROR_INTENT_CLASSIFICATION,
+    CHATBOT_ERROR_RESPONSE_GENERATION,
+    CHATBOT_ERROR_THREAD_SAFETY,
+    CHATBOT_ERROR_CACHE_FULL,
+    CHATBOT_ERROR_SESSION_EXPIRED,
+    CHATBOT_ERROR_WEB_INTEGRATION
+} ChatbotError;
+
+// Web integration structures
+typedef struct {
+    char endpoint[256];
+    char method[16];
+    char content_type[64];
+    int timeout_ms;
+    bool enable_cors;
+} WebEndpoint;
+
+typedef struct {
+    char key[128];
+    BotResponse value;
+    time_t timestamp;
+    int access_count;
+} CacheEntry;
+
+typedef struct {
+    CacheEntry entries[CACHE_SIZE];
+    int size;
+    ThreadSafeCounter counter;
+} ResponseCache;
 
 /**
  * @brief Defines the type of user intent identified by the chatbot.
@@ -301,5 +351,107 @@ void update_conversation_context(ConversationContext* context, const char* user_
  * @param context Conversation context to free.
  */
 void free_conversation_context(ConversationContext* context);
+
+// ============================================================================
+// ENHANCED MODERN FEATURES
+// ============================================================================
+
+/**
+ * @brief Initialize enhanced chatbot with modern features
+ *
+ * @param config Configuration structure for enhanced features
+ * @return true if initialization successful
+ */
+bool chatbot_init_enhanced(void* config);
+
+/**
+ * @brief Get last error code and message
+ *
+ * @param error_code Pointer to store error code
+ * @return Error message string
+ */
+const char* chatbot_get_last_error(ChatbotError* error_code);
+
+/**
+ * @brief Process user query with caching and performance optimization
+ *
+ * @param user_input User input string
+ * @param session_id Session identifier for caching
+ * @return Enhanced BotResponse with caching and performance metrics
+ */
+BotResponse* process_user_query_enhanced(const char* user_input, const char* session_id);
+
+/**
+ * @brief Initialize response cache for performance optimization
+ *
+ * @return true if cache initialization successful
+ */
+bool init_response_cache(void);
+
+/**
+ * @brief Get cached response if available
+ *
+ * @param cache_key Cache key to lookup
+ * @return Cached BotResponse or NULL if not found
+ */
+BotResponse* get_cached_response(const char* cache_key);
+
+/**
+ * @brief Store response in cache
+ *
+ * @param cache_key Cache key
+ * @param response Response to cache
+ * @return true if caching successful
+ */
+bool cache_response(const char* cache_key, const BotResponse* response);
+
+/**
+ * @brief Clear expired cache entries
+ *
+ * @return Number of entries cleared
+ */
+int clear_expired_cache(void);
+
+/**
+ * @brief Get cache statistics
+ *
+ * @param hit_rate Pointer to store cache hit rate
+ * @param size Pointer to store current cache size
+ */
+void get_cache_stats(float* hit_rate, int* size);
+
+/**
+ * @brief Initialize web integration endpoints
+ *
+ * @return true if web integration initialized successfully
+ */
+bool init_web_integration(void);
+
+/**
+ * @brief Process web request and return JSON response
+ *
+ * @param request_json JSON request string
+ * @param response_json Pointer to response JSON string (allocated by function)
+ * @return true if processing successful
+ */
+bool process_web_request(const char* request_json, char** response_json);
+
+/**
+ * @brief Get system health and performance metrics
+ *
+ * @param metrics_json Pointer to metrics JSON string (allocated by function)
+ * @return true if metrics retrieval successful
+ */
+bool get_system_health(char** metrics_json);
+
+/**
+ * @brief Thread-safe counter for concurrent request tracking
+ */
+extern ThreadSafeCounter request_counter;
+
+/**
+ * @brief Global response cache instance
+ */
+extern ResponseCache* global_cache;
 
 #endif // CHATBOT_H

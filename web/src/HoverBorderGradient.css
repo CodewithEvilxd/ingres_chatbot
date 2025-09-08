@@ -1,0 +1,171 @@
+.hover-border-gradient {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50px;
+  padding: 2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.hover-border-gradient-content {
+  position: relative;
+  z-index: 10;
+  padding: 12px 24px;
+  border-radius: 48px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.hover-border-gradient-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50px;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    #6366f1 45deg,
+    #8b5cf6 90deg,
+    #ec4899 135deg,
+    #f59e0b 180deg,
+    #10b981 225deg,
+    #06b6d4 270deg,
+    #6366f1 315deg,
+    transparent 360deg
+  );
+  background-size: 400% 400%;
+  animation: rotate-border var(--duration, 2s) linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.hover-border-gradient:hover .hover-border-gradient-border {
+  opacity: 1;
+}
+
+.hover-border-gradient-glow {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 52px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(99, 102, 241, 0.5) 45deg,
+    rgba(139, 92, 246, 0.5) 90deg,
+    rgba(236, 72, 153, 0.5) 135deg,
+    rgba(245, 158, 11, 0.5) 180deg,
+    rgba(16, 185, 129, 0.5) 225deg,
+    rgba(6, 182, 212, 0.5) 270deg,
+    rgba(99, 102, 241, 0.5) 315deg,
+    transparent 360deg
+  );
+  background-size: 400% 400%;
+  animation: rotate-glow var(--duration, 2s) linear infinite;
+  filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hover-border-gradient:hover .hover-border-gradient-glow {
+  opacity: 0.6;
+}
+
+.hover-border-gradient:hover .hover-border-gradient-content {
+  background: var(--gradient-glass);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--shadow-hover);
+}
+
+/* Animations */
+@keyframes rotate-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes rotate-glow {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .hover-border-gradient-content {
+  background: var(--bg-glass);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .hover-border-gradient:hover .hover-border-gradient-content {
+  background: var(--gradient-glass-dark);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hover-border-gradient-content {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Export button specific styles */
+.export-gradient-btn {
+  margin: 0 auto;
+}
+
+.export-gradient-content {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .hover-border-gradient-border,
+  .hover-border-gradient-glow {
+    animation: none;
+  }
+
+  .hover-border-gradient:hover .hover-border-gradient-border,
+  .hover-border-gradient:hover .hover-border-gradient-glow {
+    opacity: 0.3;
+  }
+}
